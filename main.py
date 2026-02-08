@@ -42,11 +42,11 @@ async def intake_form(request : Request):
 
 
 #TODO swap for async mongo client for fastapi best use 
-from pymongo import MongoClient
+from pymongo import AsyncMongoClient
 
 #background form processing begins
 async def process_form(param_dict : dict):
-    client = MongoClient("mongodb://localhost:27017/")
+    client = AsyncMongoClient("mongodb://localhost:27017/")
     mydb = client["caregiver_app"]
     mycol = mydb["patient_cases"]
 
