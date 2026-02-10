@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 import asyncio
 
 app = FastAPI()
-templates = Jinja2Templates(directory="/home/devin/caregive/caregive/templates")
+templates = Jinja2Templates(directory="/app/templates")
 
 #wellness form 
 @app.get("/", response_class=HTMLResponse)
@@ -51,10 +51,13 @@ async def process_form(param_dict : dict):
     mycol = mydb["patient_cases"]
 
     #check user existence  
-    patient_record = mycol.find_one({"patientID" : param_dict["patientID"]})
+    patient_record = await mycol.find_one({"patientID" : param_dict["patientID"]})
+
+    print(patient_record)
 
     #Non-existant user
     if patient_record is None:
+        return "patient doesn't exist"
         raise HTTPException(status_code=409, detail="Non-existant patientID")
     
     
