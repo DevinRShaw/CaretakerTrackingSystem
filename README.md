@@ -95,13 +95,9 @@ curl -X POST http://localhost:8000/submit_form \
 * **Database:** `caregiver_app`
 * **Collection:** `patient_cases`
 * **Usage:**
-
-  * Verify if `patientID` exists.
-  * Retrieve recent wellness entries (up to 5) for context.
-* **Notes:**
-
-  * Async MongoDB client is required for non-blocking database operations.
-  * Replace `AsyncMongoClient` import with a supported async MongoDB client (e.g., `motor.motor_asyncio.AsyncIOMotorClient`).
+  * Track patient case details
+  * Keep a record of past record submittals
+  * Track warning flags triggered by form processing
 
 ---
 
