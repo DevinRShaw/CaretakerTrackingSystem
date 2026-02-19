@@ -41,17 +41,17 @@ from pymongo import MongoClient
 from datetime import datetime
 
 def mock_patient_case():
+
     client = MongoClient("mongodb://db:27017/")
     mydb = client["caregiver_app"]
     mycol = mydb["patient_cases"]
-    
-    date_string = "12/17/2025"
+
 
     mycol.insert_one({
                 "patient_id": 1234, 
                 "name": "Denise Shaw", 
                 "operation": "masectomy",
-                "operation_date": datetime.strptime(date_string, "%m/%d/%Y"),
+                "operation_date": "12-17-2025",
                 "notes": "patient is stubborn and will under report pain levels, strong dislike of pain meds"   
             })
 

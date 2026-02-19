@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates 
 from contextlib import asynccontextmanager
 import asyncio
+from datetime import datetime
 
 #synthetic data utlities 
 from utils.mocking import *
@@ -60,28 +61,30 @@ async def intake_form(request : Request):
 from pymongo import AsyncMongoClient
 
 #background form processing begins
-async def process_form(param_dict : dict):
+async def process_form(param_dict : dict[str, str]):
     client = AsyncMongoClient("mongodb://db:27017/")
     mydb = client["caregiver_app"]
-    mycol = mydb["patient_cases"]
+
+    patient_cases = mydb["patient_cases"]
+    patient_records = mydb["patient_records"]
 
     #check user existence  
-    patient_record = await mycol.find_one({"patient_id" : int(param_dict["patientID"])})
+    patient_existence = await patient_cases.find_one({"patient_id" : int(param_dict["patientID"])})
 
     #Non-existant user
-    if patient_record is None:
-        raise HTTPException(status_code=409, detail="Non-existant patientID")
+    if patient_existence is None:
+        raise HTTPException(status_code=409, detail="non-existant patientID")
+
+    #record dating for time series checks 
+    date = datetime.now().strftime("%d-%m-%Y")
+    param_dict['date'] = date 
+
+    #insert newest record 
+    patient_records.insert_one(param_dict)
+
+    flags = await enforce_policies(patient_existence['operation'])  
+
+    if not flags: 
+        return ("no explicit flags have been found in patient records")
     
-
-    flags = await enforce_policies(patient_record['operation'])  
-
-
-
-
-
-
-
-        
-    
-
-    return param_dict
+    return flags 
