@@ -43,7 +43,7 @@ async def intake_form(request : Request):
         param_tuple = param.split("=")
         param_dict[param_tuple[0]] = param_tuple[1]
 
-    if param_dict['patientID'] == "":
+    if param_dict['patient_id'] == "":
         raise HTTPException(status_code=404, detail="Missing Patient ID")
     
     
@@ -57,6 +57,8 @@ async def intake_form(request : Request):
 
 #TODO swap for async mongo client for fastapi best use 
 from pymongo import AsyncMongoClient
+import pprint
+
 
 #background form processing begins
 async def process_form(param_dict : dict[str, str]):
@@ -69,7 +71,7 @@ async def process_form(param_dict : dict[str, str]):
         patient_records = db["patient_records"]
 
         #check user existence  
-        patient_existence = await patient_cases.find_one({"patient_id" : param_dict["patientID"]})
+        patient_existence = await patient_cases.find_one({"patient_id" : param_dict["patient_id"]})
 
         #Non-existant user
         if patient_existence is None:
@@ -79,10 +81,12 @@ async def process_form(param_dict : dict[str, str]):
         date = datetime.now().strftime("%d-%m-%Y")
         param_dict['date'] = date 
 
+
+        pprint.pprint(param_dict)
         #insert newest record 
         await patient_records.insert_one(param_dict)
 
-        flags = await enforce_policies(patient_existence['operation'], param_dict['patientID'], patient_records)  
+        flags = await enforce_policies(patient_existence['operation'], param_dict['patient_id'], patient_records)  
 
         if not flags: 
             return ("no explicit flags have been found in patient records")
