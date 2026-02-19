@@ -6,7 +6,7 @@ import asyncio
 
 #synthetic data utlities 
 from utils.mocking import *
-
+from policies.enforce import *
 
 templates = Jinja2Templates(directory="/app/templates")
 
@@ -68,29 +68,18 @@ async def process_form(param_dict : dict):
     #check user existence  
     patient_record = await mycol.find_one({"patient_id" : int(param_dict["patientID"])})
 
-
-    print(patient_record)
-
     #Non-existant user
     if patient_record is None:
         raise HTTPException(status_code=409, detail="Non-existant patientID")
     
-    
-    
 
-    #mongodb retreive the previous 5 wellness entries or less with patientID
+    flags = await enforce_policies(patient_record['operation'])  
 
-    #branch based on time since operation in patient record (healing period)
-        #apply healing period dependant checks
-            #if warning flag    
-                #create warning message
-    
-    #pass any warnings and questions/concerns into tinyllama1.1b as context
-        '''prompt
-            Given that our patient has had {operation} and is experiencing {warning},
-            use {5 previous reports} to give a warning to their caregiver 
-            emphasize contacting primary care providers with questions relevant to issue
-        '''
+
+
+
+
+
 
         
     
