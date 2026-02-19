@@ -13,8 +13,6 @@ templates = Jinja2Templates(directory="/app/templates")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # INSERT THE FAKE PATIENT CASE ENTRY   
-    # yield not needed unless we want clean up behavior 
     mock_patient_case()
     yield
 
@@ -29,6 +27,7 @@ async def root(request : Request):
     return templates.TemplateResponse(
         request=request, name="form.html"
     )
+
 
 
 #form submission 
@@ -56,35 +55,36 @@ async def intake_form(request : Request):
     return await process_form(param_dict)
 
 
-
 #TODO swap for async mongo client for fastapi best use 
 from pymongo import AsyncMongoClient
 
 #background form processing begins
 async def process_form(param_dict : dict[str, str]):
-    client = AsyncMongoClient("mongodb://db:27017/")
-    mydb = client["caregiver_app"]
 
-    patient_cases = mydb["patient_cases"]
-    patient_records = mydb["patient_records"]
+    async with AsyncMongoClient("mongodb://db:27017/") as client:
 
-    #check user existence  
-    patient_existence = await patient_cases.find_one({"patient_id" : int(param_dict["patientID"])})
+        db = client["caregiver_app"]
 
-    #Non-existant user
-    if patient_existence is None:
-        raise HTTPException(status_code=409, detail="non-existant patientID")
+        patient_cases = db["patient_cases"]
+        patient_records = db["patient_records"]
 
-    #record dating for time series checks 
-    date = datetime.now().strftime("%d-%m-%Y")
-    param_dict['date'] = date 
+        #check user existence  
+        patient_existence = await patient_cases.find_one({"patient_id" : param_dict["patientID"]})
 
-    #insert newest record 
-    patient_records.insert_one(param_dict)
+        #Non-existant user
+        if patient_existence is None:
+            raise HTTPException(status_code=409, detail="non-existant patientID")
 
-    flags = await enforce_policies(patient_existence['operation'])  
+        #record dating for time series checks 
+        date = datetime.now().strftime("%d-%m-%Y")
+        param_dict['date'] = date 
 
-    if not flags: 
-        return ("no explicit flags have been found in patient records")
-    
-    return flags 
+        #insert newest record 
+        await patient_records.insert_one(param_dict)
+
+        flags = await enforce_policies(patient_existence['operation'], param_dict['patientID'], patient_records)  
+
+        if not flags: 
+            return ("no explicit flags have been found in patient records")
+        
+        return flags 

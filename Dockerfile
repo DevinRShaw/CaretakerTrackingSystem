@@ -4,6 +4,7 @@ WORKDIR /app/
 
 COPY main.py /app/
 COPY utils/ /app/utils/ 
+COPY policies/ /app/policies/ 
 COPY requirements.txt /app/ 
 COPY templates/ /app/templates/
 

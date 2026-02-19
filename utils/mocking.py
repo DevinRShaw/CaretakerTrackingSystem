@@ -48,7 +48,7 @@ def mock_patient_case():
 
 
     mycol.insert_one({
-                "patient_id": 1234, 
+                "patient_id": '1234', 
                 "name": "Denise Shaw", 
                 "operation": "masectomy",
                 "operation_date": "12-17-2025",
