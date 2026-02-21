@@ -10,6 +10,10 @@ from datetime import datetime
 from typing import Annotated, Optional
 import pprint
 
+
+from transformers import pipeline
+import torch
+
 from utils.mocking import *
 from policies.enforce import *
 
@@ -66,6 +70,7 @@ async def intake_form(
     
     return flags
 
+
 #background form processing begins
 async def process_form(param_dict : dict[str, str]):
 
@@ -91,7 +96,51 @@ async def process_form(param_dict : dict[str, str]):
         await patient_records.insert_one(param_dict)
 
         #policy violation flags 
-        return await enforce_policies(patient_case, patient_records)  
+        return await enforce_policies(patient_case, patient_records) 
 
 
 
+
+
+
+_hf_pipeline = None
+_local_lock = asyncio.Lock()
+
+
+async def call_local_slm(
+    prompt: str,
+    model_name: str = "gpt2",
+    max_new_tokens: int = 128,
+    device: str | int | torch.device = "cpu",
+) -> dict:
+    """Use `transformers.pipeline` for cached local text generation.
+
+    - `device` can be:
+        - a string like 'cpu' or 'cuda'
+        - an int device index (0 for first CUDA device)
+        - a `torch.device` instance
+    Returns a dict with `generated_text`.
+    """
+    global _hf_pipeline
+
+    # normalize device to pipeline's `device` arg (int: -1 for CPU)
+    if isinstance(device, torch.device):
+        device = -1 if device.type == "cpu" else 0
+    elif isinstance(device, str):
+        device = -1 if device == "cpu" else 0
+
+    async with _local_lock:
+        if _hf_pipeline is None:
+            def _make_pipeline():
+                return pipeline("text-generation", model=model_name, device=device)
+
+            _hf_pipeline_local = await asyncio.to_thread(_make_pipeline)
+            _hf_pipeline = _hf_pipeline_local
+
+    def _generate():
+        outputs = _hf_pipeline(prompt, max_new_tokens=max_new_tokens, do_sample=False)
+        # pipeline returns list of dicts with 'generated_text'
+        return outputs[0]["generated_text"] if outputs else ""
+
+    generated = await asyncio.to_thread(_generate)
+    return {"generated_text": generated}
