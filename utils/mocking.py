@@ -1,3 +1,6 @@
+from pymongo import MongoClient
+from datetime import datetime, timedelta
+
 """
 Healthcare Patient Management System - MongoDB Schema
 
@@ -36,16 +39,15 @@ Relationships:
     - PatientReports → RecordFlagging (one-to-many via report_id)
 """
 
-#start up code does not need an async but patient records may 
-from pymongo import MongoClient
-from datetime import datetime, timedelta
 
 def mock_patient_case():
 
     client = MongoClient("mongodb://db:27017/")
     mydb = client["caregiver_app"]
+
     patient_cases = mydb["patient_cases"]
     patient_records = mydb["patient_records"]
+    flag_explanations = mydb["flag_explanations"]
 
     patient_cases.insert_one({
         "patient_id": '1234', 
@@ -55,5 +57,10 @@ def mock_patient_case():
         "notes": "patient is stubborn and will under report pain levels, strong dislike of pain meds"   
     })
 
-    
 
+    flag_explanations.insert_one({
+        "flag": 'masectomy_week_1_excess_pain', 
+        "explanation": """Patient is exhibiting a pain level greater than 5 out of 10 in the first week. 
+    This is an indication of incorrect dosage, medication or lack of adherence to medications.
+    Consult your physician about current pain medication, pain should remain below a 5 during first week of healing."""
+    })

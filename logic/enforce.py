@@ -21,10 +21,9 @@ async def masectomy_first_week(patient_case, patient_records) -> list[str]:
             continue
 
         if int(doc['pain_level']) >= 5:
-            policy_flags.append({'week_1_excess_pain' : doc['pain_level']})
+            policy_flags.append(('masectomy_week_1_excess_pain', doc['pain_level']))
 
     return policy_flags
-
 
 
 

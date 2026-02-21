@@ -10,12 +10,9 @@ from datetime import datetime
 from typing import Annotated, Optional
 import pprint
 
-
-from transformers import pipeline
-import torch
-
 from utils.mocking import *
-from policies.enforce import *
+from logic.enforce import *
+from logic.ai_response import * 
 
 templates = Jinja2Templates(directory="/app/templates")
 
@@ -26,9 +23,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-
-
-#wellness form 
+#survey form 
 @app.get("/", response_class=HTMLResponse)
 async def root(request : Request):
 
@@ -36,10 +31,9 @@ async def root(request : Request):
         request=request, name="form.html"
     )
 
-
-
 @app.post("/submit_form")
 async def intake_form(
+    request : Request,
     patient_id: Annotated[str, Form()],
     pain_level: Annotated[int, Form()],
     pain_trend: Annotated[str, Form()],
@@ -63,16 +57,17 @@ async def intake_form(
         "free_response": free_response.strip() if free_response else None,
     }
 
-    flags = await process_form(param_dict)
+    lm_response = await process_form(param_dict)
 
-    if not flags: 
-        return ("no explicit flags have been found in patient records")
-    
-    return flags
+    return templates.TemplateResponse(
+        "response.html",
+        {"request": request, "response_text": lm_response}
+    )
+     
 
 
 #background form processing begins
-async def process_form(param_dict : dict[str, str]):
+async def process_form(param_dict : dict[str, str]) -> str:
 
     async with AsyncMongoClient("mongodb://db:27017/") as client:
 
@@ -80,13 +75,10 @@ async def process_form(param_dict : dict[str, str]):
 
         patient_cases = db["patient_cases"]
         patient_records = db["patient_records"]
+        flag_explanations = db["flag_explanations"]  
 
         #check user existence  
         patient_case = await patient_cases.find_one({"patient_id" : param_dict["patient_id"]})
-
-        #Non-existant user
-        if patient_case is None:
-            raise HTTPException(status_code=409, detail="non-existant patient_id")
 
         #record dating for time series checks 
         date = datetime.now().strftime("%d-%m-%Y")
@@ -96,51 +88,13 @@ async def process_form(param_dict : dict[str, str]):
         await patient_records.insert_one(param_dict)
 
         #policy violation flags 
-        return await enforce_policies(patient_case, patient_records) 
+        flags = await enforce_policies(patient_case, patient_records) 
 
+        #small language model response w/ flag explanations, patient details 
+        explanations = []
+        for flag in flags: 
+            print(flag) 
+            explanation_doc = await flag_explanations.find_one({'flag' : flag[0]}) 
+            explanations.append(explanation_doc['explanation']) 
 
-
-
-
-
-_hf_pipeline = None
-_local_lock = asyncio.Lock()
-
-
-async def call_local_slm(
-    prompt: str,
-    model_name: str = "gpt2",
-    max_new_tokens: int = 128,
-    device: str | int | torch.device = "cpu",
-) -> dict:
-    """Use `transformers.pipeline` for cached local text generation.
-
-    - `device` can be:
-        - a string like 'cpu' or 'cuda'
-        - an int device index (0 for first CUDA device)
-        - a `torch.device` instance
-    Returns a dict with `generated_text`.
-    """
-    global _hf_pipeline
-
-    # normalize device to pipeline's `device` arg (int: -1 for CPU)
-    if isinstance(device, torch.device):
-        device = -1 if device.type == "cpu" else 0
-    elif isinstance(device, str):
-        device = -1 if device == "cpu" else 0
-
-    async with _local_lock:
-        if _hf_pipeline is None:
-            def _make_pipeline():
-                return pipeline("text-generation", model=model_name, device=device)
-
-            _hf_pipeline_local = await asyncio.to_thread(_make_pipeline)
-            _hf_pipeline = _hf_pipeline_local
-
-    def _generate():
-        outputs = _hf_pipeline(prompt, max_new_tokens=max_new_tokens, do_sample=False)
-        # pipeline returns list of dicts with 'generated_text'
-        return outputs[0]["generated_text"] if outputs else ""
-
-    generated = await asyncio.to_thread(_generate)
-    return {"generated_text": generated}
+        response = await construct_response(explanations, patient_case) 

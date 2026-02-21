@@ -1,0 +1,46 @@
+<!-- templates/response.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Response Display</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f7f9fb;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            padding: 40px;
+        }
+
+        .response-box {
+            background-color: #ffffff;
+            padding: 30px 40px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 600px;
+            box-sizing: border-box;
+        }
+
+        p {
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 640px) {
+            .response-box {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="response-box">
+    <p>{{ response_text }}</p>
+</div>
+
+</body>
+</html>
