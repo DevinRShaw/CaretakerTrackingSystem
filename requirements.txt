@@ -3,7 +3,3 @@ pymongo
 uvicorn[standard]
 jinja2
 python-multipart
-
-
-transformers
-torch

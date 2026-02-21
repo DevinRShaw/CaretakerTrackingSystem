@@ -23,6 +23,10 @@ async def masectomy_first_week(patient_case, patient_records) -> list[str]:
         if int(doc['pain_level']) >= 5:
             policy_flags.append(('masectomy_week_1_excess_pain', doc['pain_level']))
 
+        if doc['wound_color'] not in ('red', 'pink', 'dark red'):
+            policy_flags.append(('masectomy_week_1_discoloration', doc['wound_color'])) 
+
+
     return policy_flags
 
 

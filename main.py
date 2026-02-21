@@ -12,7 +12,7 @@ import pprint
 
 from utils.mocking import *
 from logic.enforce import *
-from logic.ai_response import * 
+#from side.ai_response import * 
 
 templates = Jinja2Templates(directory="/app/templates")
 
@@ -57,14 +57,13 @@ async def intake_form(
         "free_response": free_response.strip() if free_response else None,
     }
 
-    lm_response = await process_form(param_dict)
+    responses = await process_form(param_dict)
 
     return templates.TemplateResponse(
         "response.html",
-        {"request": request, "response_text": lm_response}
+        {"request": request, "response_texts": responses} 
     )
      
-
 
 #background form processing begins
 async def process_form(param_dict : dict[str, str]) -> str:
@@ -80,6 +79,10 @@ async def process_form(param_dict : dict[str, str]) -> str:
         #check user existence  
         patient_case = await patient_cases.find_one({"patient_id" : param_dict["patient_id"]})
 
+
+        if patient_case is None:
+            return ['Patient does not exist']
+
         #record dating for time series checks 
         date = datetime.now().strftime("%d-%m-%Y")
         param_dict['date'] = date 
@@ -89,12 +92,17 @@ async def process_form(param_dict : dict[str, str]) -> str:
 
         #policy violation flags 
         flags = await enforce_policies(patient_case, patient_records) 
+        
+            
+        if not flags:
+            return ['No explicit flags raised, but proceed with caution and be sure to continue submitting daily forms.']
+
+        #log flags into the flag record database 
 
         #small language model response w/ flag explanations, patient details 
         explanations = []
         for flag in flags: 
-            print(flag) 
             explanation_doc = await flag_explanations.find_one({'flag' : flag[0]}) 
-            explanations.append(explanation_doc['explanation']) 
+            explanations.append((flag, explanation_doc['explanation']))
 
-        response = await construct_response(explanations, patient_case) 
+        return explanations 

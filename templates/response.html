@@ -9,9 +9,13 @@
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             background-color: #f7f9fb;
             color: #333;
-            display: flex;
-            justify-content: center;
             padding: 40px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .response-box {
@@ -19,14 +23,25 @@
             padding: 30px 40px;
             border-radius: 12px;
             box-shadow: 0 6px 20px rgba(0,0,0,0.08);
-            width: 100%;
-            max-width: 600px;
             box-sizing: border-box;
+            margin-bottom: 20px;
         }
 
-        p {
+        .response-box:last-child {
+            margin-bottom: 0;
+        }
+
+        .response-label {
+            font-weight: 600;
+            color: #c62828; /* red label like your form */
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .response-text {
             font-size: 14px;
             line-height: 1.6;
+            margin: 0;
         }
 
         @media (max-width: 640px) {
@@ -38,8 +53,13 @@
 </head>
 <body>
 
-<div class="response-box">
-    <p>{{ response_text }}</p>
+<div class="container">
+    {% for label, text in response_texts %}
+        <div class="response-box">
+            <span class="response-label">WARNING: {{label}}</span>
+            <p class="response-text">{{ text }}</p>
+        </div>
+    {% endfor %}
 </div>
 
 </body>

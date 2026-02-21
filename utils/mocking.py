@@ -64,3 +64,8 @@ def mock_patient_case():
     This is an indication of incorrect dosage, medication or lack of adherence to medications.
     Consult your physician about current pain medication, pain should remain below a 5 during first week of healing."""
     })
+
+    flag_explanations.insert_one({
+        "flag": 'masectomy_week_1_discoloration', 
+        "explanation": """Patient wounds should be ranging from pink to dark red in the first week of healing. Color outside of this is abnormal and cause for concern, contact your provider for further guidance."""
+    })
