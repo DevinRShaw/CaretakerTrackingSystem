@@ -114,11 +114,4 @@ curl -X POST http://localhost:8000/submit_form \
 ### Processing Design
 <img width="768" height="724" alt="Form Analysis and Flagging drawio" src="https://github.com/user-attachments/assets/924cb133-615c-4b3e-b9aa-ed53ad39425e" />
 
----
 
-## Planned Features / TODOs
-
-  * Branch processing logic based on time since operation to generate appropriate warnings.
-* **AI-Driven Guidance:**
-
-  * Use prior wellness reports, doctor provided context and current patient input to generate structured guidance for caregivers.
